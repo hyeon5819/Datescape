@@ -25,6 +25,7 @@ from articles.models import (
     BookMark,
     Reply,
 )
+from notification.models import Notification
 from dsproject import settings
 from django.db.models import Q
 from haversine import haversine, Unit
@@ -450,6 +451,10 @@ class CommentView(APIView):
         serializer = CommentCreateSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(writer=request.user, article=article)
+            # 알림 생성
+            Notification.objects.create(
+                target_user=article.user, type="comment", type_id=serializer.data["id"]
+            )
             return Response(
                 CommentSerializer(Comment.objects.get(id=serializer.data["id"])).data,
                 status=status.HTTP_200_OK,
@@ -680,6 +685,10 @@ class ReplyView(APIView):
         serializer = ReplySerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(comment=comment, writer=user)
+            # 알림 생성
+            Notification.objects.create(
+                target_user=comment.writer, type="reply", type_id=serializer.data["id"]
+            )
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_400_BAD_REQUEST)
